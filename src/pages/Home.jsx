@@ -10,7 +10,6 @@ const Home = () => {
       className="min-h-screen w-full flex items-center justify-center relative font-sans bg-contain bg-center bg-no-repeat bg-[#0f172a]"
       style={{ backgroundImage: `url(${bgImage})` }}
     >
-      <div className="absolute inset-0 bg-black/30 z-0"></div>
 
       <div className="relative z-10 flex flex-col md:flex-row items-center justify-between w-full max-w-5xl p-8 gap-12 md:gap-0">
 
@@ -37,18 +36,21 @@ const Home = () => {
             </button>
 
             <button
+              onClick={() => navigate('/how-to-play')}
               className="w-full bg-[#00E676] text-[#0b1b36] py-3 rounded-lg text-lg font-bold hover:bg-[#00C853] active:scale-[0.98] transition-all"
             >
               How to play
             </button>
 
             <button
+              onClick={() => navigate('/leaderboard')}
               className="w-full bg-[#FFD93D] text-[#0b1b36] py-3 rounded-lg text-lg font-bold hover:bg-[#facc15] active:scale-[0.98] transition-all"
             >
               Leaderboard
             </button>
 
             <button
+              onClick={() => navigate('/profile')}
               className="w-full bg-[#00E676] text-[#0b1b36] py-3 rounded-lg text-lg font-bold hover:bg-[#00C853] active:scale-[0.98] transition-all"
             >
               Profile

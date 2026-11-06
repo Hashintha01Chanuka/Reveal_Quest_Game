@@ -16,8 +16,6 @@ const Login = () => {
       className="min-h-screen w-full flex items-center justify-center relative font-sans bg-contain bg-no-repeat bg-center bg-[#0f172a]"
       style={{ backgroundImage: `url(${bgImage})` }}
     >
-      <div className="absolute inset-0 bg-black/30 z-0"></div>
-
       <div className="relative z-10 flex flex-col md:flex-row items-center justify-between w-full max-w-5xl p-8 gap-12 md:gap-0">
 
         <div className="flex-1 flex justify-center items-center">

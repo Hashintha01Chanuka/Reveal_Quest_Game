@@ -4,6 +4,9 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Home from './pages/Home';
 import Game from './pages/Game';
+import HowToPlay from './pages/HowToPlay';
+import Leaderboard from './pages/Leaderboard';
+import Profile from './pages/Profile';
 
 
 function App() {
@@ -15,6 +18,9 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/home" element={<Home />} />
           <Route path="/game" element={<Game />} />
+          <Route path="/how-to-play" element={<HowToPlay />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="/profile" element={<Profile />} />
         </Routes>
       </div>
     </Router>
