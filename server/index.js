@@ -199,6 +199,40 @@ app.post("/api/reset-password", (req, res) => {
   })
 })
 
+app.post("/api/score", verifyToken, (req, res) => {
+  const { score } = req.body;
+  const userId = req.user.id;
+
+  if (!score) return res.status(400).json({ error: "Score is required" });
+
+  const query = "INSERT INTO scores (user_id, score) VALUES (?, ?)";
+  db.query(query, [userId, score], (err, result) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ error: "Could not save score" });
+    }
+    res.status(201).json({ message: "Score saved successfully" });
+  });
+});
+
+app.get("/api/leaderboard", (req, res) => {
+  const query = `
+    SELECT users.username, MAX(scores.score) as score 
+    FROM scores 
+    JOIN users ON scores.user_id = users.id 
+    GROUP BY users.id, users.username
+    ORDER BY score DESC 
+    LIMIT 10
+  `
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Database error:", err)
+      return res.status(500).json({ error: "Could not fetch leaderboard" })
+    }
+    res.status(200).json(results)
+  })
+})
 
 
 const PORT = process.env.PORT || 5000

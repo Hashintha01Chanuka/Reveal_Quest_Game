@@ -6,29 +6,24 @@ import { fetchPuzzle } from '../services/bananaApi';
 const Game = () => {
   const navigate = useNavigate();
 
-  // --- Game State ---
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(5);
   const [timeLeft, setTimeLeft] = useState(45);
   const maxTime = 45;
 
-  // Game Data
   const [category] = useState('Famous Fruit');
   const [targetWord] = useState('BANANA');
   const [guessedLetters, setGuessedLetters] = useState([]);
   const [isPuzzleVisible, setIsPuzzleVisible] = useState(false);
 
-  // Inputs
   const [puzzleAnswer, setPuzzleAnswer] = useState('');
   const [wordGuess, setWordGuess] = useState('');
 
-  // --- API State ---
   const [puzzleImage, setPuzzleImage] = useState('');
   const [puzzleSolution, setPuzzleSolution] = useState(null);
   const [isLoadingPuzzle, setIsLoadingPuzzle] = useState(false);
   const [apiError, setApiError] = useState(null);
 
-  // --- 1. TIMER LOGIC ---
   useEffect(() => {
     if (timeLeft <= 0) {
       handleGameOver("Time's up!");
@@ -42,9 +37,7 @@ const Game = () => {
     return () => clearInterval(timerId);
   }, [timeLeft]);
 
-  // --- 2. INITIAL SETUP ---
   useEffect(() => {
-    // Give 1 free letter at the start
     const uniqueLetters = [...new Set(targetWord.split(''))];
     const randomLetter = uniqueLetters[Math.floor(Math.random() * uniqueLetters.length)];
     setGuessedLetters([randomLetter]);
@@ -52,7 +45,6 @@ const Game = () => {
     loadNewPuzzle();
   }, [targetWord]);
 
-  // --- 3. LOAD PUZZLE FROM SERVICE ---
   const loadNewPuzzle = async () => {
     setIsLoadingPuzzle(true);
     setApiError(null);
@@ -67,14 +59,13 @@ const Game = () => {
     }
   };
 
-  // --- 4. HANDLERS ---
   const handleCheckPuzzle = (e) => {
     e.preventDefault();
 
     if (parseInt(puzzleAnswer) === puzzleSolution) {
       revealRandomLetter();
       setScore(score + 10);
-      loadNewPuzzle(); // Get new puzzle for next time
+      loadNewPuzzle(); 
     } else {
       alert("Wrong math answer! Try again.");
     }
@@ -117,26 +108,43 @@ const Game = () => {
     }
   };
 
-  // --- 5. WIN/LOSS CONDITIONS ---
   const checkIfWordComplete = (letters) => {
     const allRevealed = targetWord.split('').every(letter => letters.includes(letter));
     if (allRevealed) handleWin();
   };
 
-  const handleWin = () => {
-    // In the next branch (dictionary-api), we will replace this alert with a beautiful modal!
+  const submitScoreToDatabase = async (finalScore) => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      await fetch('http://localhost:5000/api/score', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ score: finalScore })
+      });
+    } catch (error) {
+      console.error("Failed to save score:", error);
+    }
+  };
+
+  const handleWin = async () => {
+    await submitScoreToDatabase(score + 50);
     setTimeout(() => {
       alert(`Congratulations! You revealed the word: ${targetWord}`);
       navigate('/home');
     }, 300);
   };
 
-  const handleGameOver = (reason) => {
+  const handleGameOver = async (reason) => {
+    await submitScoreToDatabase(score); 
     alert(`Game Over: ${reason}`);
     navigate('/home');
   };
 
-  // --- RENDER ---
   return (
     <div
       className="min-h-screen w-full flex items-center justify-center relative font-sans bg-contain bg-center bg-no-repeat bg-[#0f172a]"
@@ -144,17 +152,8 @@ const Game = () => {
     >
       <div className="relative z-10 flex flex-col md:flex-row items-center justify-between w-full max-w-5xl p-8 gap-12 md:gap-0">
 
-        {/* Left Side - Logo Area */}
-        <div className="flex-1 flex justify-center items-center">
-          <div className="text-center leading-tight">
-            {/* You can add your text or image logo here later */}
-          </div>
-        </div>
+        <div className="relative z-10 w-full max-w-[500px] bg-[#0b1b36] rounded-3xl ml-120 p-6 shadow-2xl flex flex-col gap-5 border border-white/10">
 
-        {/* Main Game Card */}
-        <div className="relative z-10 w-full max-w-[500px] bg-[#0b1b36] rounded-3xl p-6 shadow-2xl flex flex-col gap-5 border border-white/10">
-
-          {/* Top Bar */}
           <div className="flex justify-between items-center text-sm font-semibold">
             <div className="text-gray-300">Round 1/5</div>
             <div className="text-red-500 tracking-widest text-lg">
@@ -165,7 +164,6 @@ const Game = () => {
             <div className="text-[#FFD93D] text-lg">{score} pts</div>
           </div>
 
-          {/* Hidden Word Display */}
           <div className="flex justify-center gap-2 mt-2">
             {targetWord.split('').map((letter, index) => (
               <div
@@ -181,7 +179,6 @@ const Game = () => {
             Hint: It is a {category}
           </div>
 
-          {/* --- PUZZLE AREA --- */}
           {isPuzzleVisible ? (
             <div className="animate-fade-in flex flex-col gap-3">
               <div className="w-full bg-white rounded-xl overflow-hidden shadow-lg p-1 min-h-[150px] flex items-center justify-center relative">
@@ -242,7 +239,6 @@ const Game = () => {
             </div>
           )}
 
-          {/* Timer */}
           <div className="flex items-center gap-3 mt-2">
             <div className="w-full bg-gray-700 h-2 rounded-full overflow-hidden">
               <div
