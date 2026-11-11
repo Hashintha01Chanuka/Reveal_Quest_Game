@@ -5,6 +5,12 @@ import bgImage from "../assets/b.jpeg";
 const Home = () => {
   const navigate = useNavigate();
 
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/');
+  };
+
   return (
     <div
       className="min-h-screen w-full flex items-center justify-center relative font-sans bg-contain bg-center bg-no-repeat bg-[#0f172a]"
@@ -56,6 +62,13 @@ const Home = () => {
               Profile
             </button>
           </div>
+
+          <button
+            onClick={handleLogout}
+            className="mt-4 text-red-400 text-sm hover:text-red-300 transition-colors"
+          >
+            Log Out
+          </button>
 
         </div>
       </div>
