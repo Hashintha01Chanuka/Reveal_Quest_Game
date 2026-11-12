@@ -215,6 +215,35 @@ app.post("/api/score", verifyToken, (req, res) => {
   });
 });
 
+app.get("/api/words/:category", (req, res) => {
+  const category = req.params.category
+
+  const query = `
+    SELECT word, category, clue, difficulty 
+    FROM words 
+    WHERE category = ? 
+    ORDER BY RAND() 
+    LIMIT 5
+  `
+
+  db.query(query, [category], (err, results) => {
+    if (err) return res.status(500).json({ error: "Server error" })
+    if (results.length === 0)
+      return res.status(404).json({ error: "No words found for this category" })
+
+    res.status(200).json(results)
+  })
+})
+
+app.get("/api/categories", (req, res) => {
+  const query = "SELECT DISTINCT category FROM words"
+  db.query(query, (err, results) => {
+    if (err) return res.status(500).json({ error: "Server error" })
+    const categories = results.map((r) => r.category)
+    res.status(200).json(categories)
+  })
+})
+
 app.get("/api/leaderboard", (req, res) => {
   const query = `
     SELECT users.username, MAX(scores.score) as score 

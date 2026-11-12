@@ -35,7 +35,7 @@ const Home = () => {
 
           <div className="flex flex-col gap-3 mt-2">
             <button
-              onClick={() => navigate('/game')}
+              onClick={() => navigate('/categories')}
               className="w-full bg-[#FFD93D] text-[#0b1b36] py-3 rounded-lg text-lg font-bold hover:bg-[#facc15] active:scale-[0.98] transition-all"
             >
               Start Play
