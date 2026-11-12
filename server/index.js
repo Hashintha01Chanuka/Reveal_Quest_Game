@@ -200,20 +200,78 @@ app.post("/api/reset-password", (req, res) => {
 })
 
 app.post("/api/score", verifyToken, (req, res) => {
-  const { score } = req.body;
-  const userId = req.user.id;
+  const { score, wordsSolved, isWin, timeTaken } = req.body
+  const userId = req.user.id
 
-  if (!score) return res.status(400).json({ error: "Score is required" });
+  const query = `
+    INSERT INTO scores (user_id, score, words_solved, is_win, time_taken) 
+    VALUES (?, ?, ?, ?, ?)
+  `
 
-  const query = "INSERT INTO scores (user_id, score) VALUES (?, ?)";
-  db.query(query, [userId, score], (err, result) => {
-    if (err) {
-      console.error("Database error:", err);
-      return res.status(500).json({ error: "Could not save score" });
-    }
-    res.status(201).json({ message: "Score saved successfully" });
-  });
-});
+  db.query(
+    query,
+    [userId, score, wordsSolved, isWin, timeTaken],
+    (err, result) => {
+      if (err) {
+        console.error(err)
+        return res.status(500).json({ error: "Could not save score" })
+      }
+      res.status(201).json({ message: "Score saved successfully" })
+    },
+  )
+})
+
+app.get("/api/user/profile", verifyToken, (req, res) => {
+  const userId = req.user.id
+
+   const profileQuery = `
+    SELECT 
+      COUNT(id) as totalGames,
+      IFNULL(MAX(score), 0) as bestScore,
+      IFNULL(SUM(words_solved), 0) as totalWordsSolved,
+      IFNULL(SUM(is_win), 0) as totalWins,
+      -- ONLY calculate times if the game was WON and time_taken > 0
+      IFNULL(MIN(CASE WHEN is_win = 1 AND time_taken > 0 THEN time_taken ELSE NULL END), 0) as fastestTime,
+      IFNULL(ROUND(AVG(CASE WHEN is_win = 1 AND time_taken > 0 THEN time_taken ELSE NULL END)), 0) as avgTime
+    FROM scores 
+    WHERE user_id = ?
+  `
+
+  db.query(profileQuery, [userId], (err, stats) => {
+    if (err) return res.status(500).json({ error: "Server error" })
+    const s = stats[0]
+
+    // Calculate accuracy
+    const accuracy =
+      s.totalGames > 0 ? Math.round((s.totalWins / s.totalGames) * 100) : 0
+    // Calculate games won format (Wins / Total Games)
+    const gamesWonString = `${s.totalWins}/${s.totalGames}`
+
+    const recentQuery = `
+      SELECT score, words_solved, is_win, time_taken, played_at 
+      FROM scores 
+      WHERE user_id = ? 
+      ORDER BY played_at DESC LIMIT 5
+    `
+
+    db.query(recentQuery, [userId], (err, recent) => {
+      if (err) return res.status(500).json({ error: "Server error" })
+
+      res.status(200).json({
+        user: {
+          name: req.user.username,
+          wordsSolved: s.totalWordsSolved,
+          accuracy: `${accuracy}%`,
+          bestScore: s.bestScore,
+          gamesWon: gamesWonString,
+          avgTime: `${s.avgTime}s`,
+          fastestTime: `${s.fastestTime}s`,
+        },
+        recentGames: recent,
+      })
+    })
+  })
+})
 
 app.get("/api/words/:category", (req, res) => {
   const category = req.params.category

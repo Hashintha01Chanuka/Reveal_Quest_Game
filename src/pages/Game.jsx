@@ -30,6 +30,9 @@ const Game = () => {
   const [isLoadingPuzzle, setIsLoadingPuzzle] = useState(false);
   const [apiError, setApiError] = useState(null);
 
+  const [gameStartTime] = useState(Date.now());
+  const [wordsSolvedThisGame, setWordsSolvedThisGame] = useState(0);
+
   const [modalConfig, setModalConfig] = useState({
     isOpen: false,
     title: '',
@@ -75,10 +78,22 @@ const Game = () => {
   useEffect(() => {
     if (words.length > 0 && words[round]) {
       const currentWord = words[round].word;
-      const uniqueLetters = [...new Set(currentWord.split(''))];
-      const randomLetter = uniqueLetters[Math.floor(Math.random() * uniqueLetters.length)];
 
-      setGuessedLetters([randomLetter]);
+      const uniqueLetters = [...new Set(currentWord.split(''))];
+
+      let numToReveal = 2; 
+      if (uniqueLetters.length >= 7) {
+        numToReveal = 3;
+      }
+      if (uniqueLetters.length <= 3) {
+        numToReveal = 1;
+      }
+
+      // Shuffle the unique letters and pick the required amount
+      const shuffled = uniqueLetters.sort(() => 0.5 - Math.random());
+      const startingReveals = shuffled.slice(0, numToReveal);
+
+      setGuessedLetters(startingReveals);
       setTimeLeft(maxTime);
       setIsPuzzleVisible(false);
       loadNewPuzzle();
@@ -173,48 +188,48 @@ const Game = () => {
     if (allRevealed) handleWin();
   };
 
-  const submitScoreToDatabase = async (finalScore) => {
+  const submitScoreToDatabase = async (finalScore, wordsSolved, isWin, timeTaken) => {
     const token = localStorage.getItem('token');
     if (!token) return;
     try {
       await fetch('http://localhost:5000/api/score', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ score: finalScore })
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          score: finalScore,
+          wordsSolved: wordsSolved,
+          isWin: isWin,
+          timeTaken: timeTaken
+        })
       });
     } catch (error) { console.error("Failed to save score:", error); }
   };
 
   const handleWin = async () => {
+    const newWordsSolved = wordsSolvedThisGame + 1;
+    setWordsSolvedThisGame(newWordsSolved);
+
     if (round < maxRounds - 1) {
-      showModal(
-        "Correct! 🎉",
-        `The word was ${words[round].word}. You earned points!`,
-        `Start Round ${round + 2}`,
-        () => setRound(round + 1),
-        "success"
-      );
+      showModal("Correct! 🎉", `The word was ${words[round].word}.`, `Start Round ${round + 2}`, () => setRound(round + 1), "success");
     } else {
-      await submitScoreToDatabase(score + 50);
-      showModal(
-        "Quest Complete! 🏆",
-        `Congratulations! You finished ${selectedCategory} with ${score + 50} points!`,
-        "Back to Home",
-        () => navigate('/home'),
-        "success"
-      );
+      // Game complete! Calculate time taken
+      const timeTaken = Math.floor((Date.now() - gameStartTime) / 1000);
+
+      await submitScoreToDatabase(score + 50, newWordsSolved, true, timeTaken);
+
+      showModal("Quest Complete! 🏆", `You finished with ${score + 50} points!`, "Back to Home", () => navigate('/home'), "success");
     }
   };
 
   const handleGameOver = async (reason) => {
-    await submitScoreToDatabase(score);
-    showModal(
-      "Game Over 💀",
-      `Reason: ${reason}. You made it to round ${round + 1}.`,
-      "Back to Home",
-      () => navigate('/home'),
-      "error"
-    );
+    const timeTaken = Math.floor((Date.now() - gameStartTime) / 1000);
+
+    await submitScoreToDatabase(score, wordsSolvedThisGame, false, timeTaken);
+
+    showModal("Game Over 💀", `Reason: ${reason}. You made it to round ${round + 1}.`, "Back to Home", () => navigate('/home'), "error");
   };
 
   if (isLoadingWords) {
