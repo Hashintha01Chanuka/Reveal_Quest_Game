@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import bgImage from "../assets/b.jpeg";
+import Modal from '../components/Modal';
 
 const Register = () => {
   const [name, setName] = useState('');
@@ -9,6 +10,8 @@ const Register = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const navigate = useNavigate();
 
@@ -29,8 +32,7 @@ const Register = () => {
       const data = await response.json();
 
       if (response.ok) {
-        alert("Account created successfully! Please log in.");
-        navigate('/');
+        setShowSuccessModal(true);
       } else {
         setError(data.error || 'Registration failed. Please try again.');
       }
@@ -124,7 +126,6 @@ const Register = () => {
 
             <div className="flex justify-between items-center text-white text-sm mt-1">
               <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" className="accent-[#FFD93D] w-4 h-4" required /> Remember me
               </label>
               <Link to="/forgot-password" className="hover:underline">Forgot Password?</Link>
             </div>
@@ -157,9 +158,16 @@ const Register = () => {
           <div className="text-gray-400 text-sm text-center mt-4">
             Already have an account? <Link to="/" className="text-[#FFD93D] font-semibold hover:underline">Login</Link>
           </div>
-
         </div>
       </div>
+      <Modal
+        isOpen={showSuccessModal}
+        title="Account Created!"
+        buttonText="Go to Login"
+        onButtonClick={() => navigate('/')}
+      >
+        Your account has been successfully created. You can now log in to start your quest!
+      </Modal>
     </div>
   );
 };

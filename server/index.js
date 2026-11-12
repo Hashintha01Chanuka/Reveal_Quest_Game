@@ -199,6 +199,127 @@ app.post("/api/reset-password", (req, res) => {
   })
 })
 
+app.post("/api/score", verifyToken, (req, res) => {
+  const { score, wordsSolved, isWin, timeTaken } = req.body
+  const userId = req.user.id
+
+  const query = `
+    INSERT INTO scores (user_id, score, words_solved, is_win, time_taken) 
+    VALUES (?, ?, ?, ?, ?)
+  `
+
+  db.query(
+    query,
+    [userId, score, wordsSolved, isWin, timeTaken],
+    (err, result) => {
+      if (err) {
+        console.error(err)
+        return res.status(500).json({ error: "Could not save score" })
+      }
+      res.status(201).json({ message: "Score saved successfully" })
+    },
+  )
+})
+
+app.get("/api/user/profile", verifyToken, (req, res) => {
+  const userId = req.user.id
+
+   const profileQuery = `
+    SELECT 
+      COUNT(id) as totalGames,
+      IFNULL(MAX(score), 0) as bestScore,
+      IFNULL(SUM(words_solved), 0) as totalWordsSolved,
+      IFNULL(SUM(is_win), 0) as totalWins,
+      -- ONLY calculate times if the game was WON and time_taken > 0
+      IFNULL(MIN(CASE WHEN is_win = 1 AND time_taken > 0 THEN time_taken ELSE NULL END), 0) as fastestTime,
+      IFNULL(ROUND(AVG(CASE WHEN is_win = 1 AND time_taken > 0 THEN time_taken ELSE NULL END)), 0) as avgTime
+    FROM scores 
+    WHERE user_id = ?
+  `
+
+  db.query(profileQuery, [userId], (err, stats) => {
+    if (err) return res.status(500).json({ error: "Server error" })
+    const s = stats[0]
+
+    // Calculate accuracy
+    const accuracy =
+      s.totalGames > 0 ? Math.round((s.totalWins / s.totalGames) * 100) : 0
+    // Calculate games won format (Wins / Total Games)
+    const gamesWonString = `${s.totalWins}/${s.totalGames}`
+
+    const recentQuery = `
+      SELECT score, words_solved, is_win, time_taken, played_at 
+      FROM scores 
+      WHERE user_id = ? 
+      ORDER BY played_at DESC LIMIT 5
+    `
+
+    db.query(recentQuery, [userId], (err, recent) => {
+      if (err) return res.status(500).json({ error: "Server error" })
+
+      res.status(200).json({
+        user: {
+          name: req.user.username,
+          wordsSolved: s.totalWordsSolved,
+          accuracy: `${accuracy}%`,
+          bestScore: s.bestScore,
+          gamesWon: gamesWonString,
+          avgTime: `${s.avgTime}s`,
+          fastestTime: `${s.fastestTime}s`,
+        },
+        recentGames: recent,
+      })
+    })
+  })
+})
+
+app.get("/api/words/:category", (req, res) => {
+  const category = req.params.category
+
+  const query = `
+    SELECT word, category, clue, difficulty 
+    FROM words 
+    WHERE category = ? 
+    ORDER BY RAND() 
+    LIMIT 5
+  `
+
+  db.query(query, [category], (err, results) => {
+    if (err) return res.status(500).json({ error: "Server error" })
+    if (results.length === 0)
+      return res.status(404).json({ error: "No words found for this category" })
+
+    res.status(200).json(results)
+  })
+})
+
+app.get("/api/categories", (req, res) => {
+  const query = "SELECT DISTINCT category FROM words"
+  db.query(query, (err, results) => {
+    if (err) return res.status(500).json({ error: "Server error" })
+    const categories = results.map((r) => r.category)
+    res.status(200).json(categories)
+  })
+})
+
+app.get("/api/leaderboard", (req, res) => {
+  const query = `
+    SELECT users.username, MAX(scores.score) as score 
+    FROM scores 
+    JOIN users ON scores.user_id = users.id 
+    GROUP BY users.id, users.username
+    ORDER BY score DESC 
+    LIMIT 10
+  `
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Database error:", err)
+      return res.status(500).json({ error: "Could not fetch leaderboard" })
+    }
+    res.status(200).json(results)
+  })
+})
 
 
 const PORT = process.env.PORT || 5000

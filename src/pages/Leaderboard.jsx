@@ -1,37 +1,48 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import bgImage from "../assets/b.jpeg";
 
 const Leaderboard = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('all'); // 'all' or 'week'
+  const [activeTab, setActiveTab] = useState('all');
 
-  // Mock Data for the table
-  const leaderboardData = [
-    { rank: 1, name: 'Hashintha', words: 2, best: 90, avg: '18.8s' },
-    // You can add more mock players here later
-  ];
+  const [leaderboardData, setLeaderboardData] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchLeaderboard = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/leaderboard');
+        const data = await response.json();
+
+        if (response.ok) {
+          setLeaderboardData(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch leaderboard:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchLeaderboard();
+  }, [activeTab]);
 
   return (
     <div
       className="min-h-screen w-full flex items-center justify-center relative font-sans bg-contain bg-center bg-no-repeat bg-[#0f172a]"
       style={{ backgroundImage: `url(${bgImage})` }}
     >
-      <div className="relative z-10 flex flex-col md:flex-row items-center justify-between w-full max-w-5xl p-8 gap-12 md:gap-0">
 
-        {/* Left Side - Logo Area */}
-        <div className="flex-1 flex justify-center items-center">
-          <div className="text-center leading-tight">
-            {/* Logo placeholder */}
-          </div>
-        </div>
+      <div className="relative z-10 flex flex-col md:flex-row items-center justify-between w-full max-w-5xl ml-60 p-8 gap-12 md:gap-0">
 
-        {/* Right Side - Leaderboard Card */}
+        <div className="flex-1 flex justify-center items-center"></div>
+
         <div className="w-full max-w-[550px] bg-[#0b1b36] rounded-2xl p-8 shadow-2xl flex flex-col gap-6 border border-white/10">
 
           <div className="text-center">
             <h2 className="text-white text-3xl font-bold m-0">Leaderboard</h2>
-            <p className="text-gray-400 text-sm mt-1">Ranked by words solved, then solving speed</p>
+            <p className="text-gray-400 text-sm mt-1">Ranked by highest score</p>
           </div>
 
           {/* Tabs */}
@@ -55,21 +66,25 @@ const Leaderboard = () => {
             <div className="grid grid-cols-5 text-xs text-gray-400 font-semibold uppercase tracking-wider mb-3 px-2">
               <div className="col-span-1">#</div>
               <div className="col-span-2">Player</div>
-              <div className="col-span-1 text-center">Words</div>
-              <div className="col-span-1 text-center">Best</div>
-              <div className="col-span-1 text-right">Avg time</div>
+              <div className="col-span-2 text-right">Score</div>
             </div>
 
-            <div className="flex flex-col gap-1">
-              {leaderboardData.map((player, index) => (
-                <div key={index} className="grid grid-cols-5 items-center bg-[#152c52]/50 hover:bg-[#152c52] transition-colors py-3 px-2 rounded-lg text-sm text-white">
-                  <div className="col-span-1 font-bold text-gray-300">{player.rank}</div>
-                  <div className="col-span-2 font-medium">{player.name}</div>
-                  <div className="col-span-1 text-center">{player.words}</div>
-                  <div className="col-span-1 text-center">{player.best}</div>
-                  <div className="col-span-1 text-right">{player.avg}</div>
-                </div>
-              ))}
+            <div className="flex flex-col gap-1 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+              {isLoading ? (
+                <div className="text-center text-gray-400 py-4 animate-pulse">Loading scores...</div>
+              ) : leaderboardData.length === 0 ? (
+                <div className="text-center text-gray-400 py-4">No scores yet. Play a game!</div>
+              ) : (
+                leaderboardData.map((player, index) => (
+                  <div key={index} className="grid grid-cols-5 items-center bg-[#152c52]/50 hover:bg-[#152c52] transition-colors py-3 px-2 rounded-lg text-sm text-white">
+                    <div className={`col-span-1 font-bold ${index === 0 ? 'text-[#FFD93D]' : index === 1 ? 'text-gray-300' : index === 2 ? 'text-[#cd7f32]' : 'text-gray-500'}`}>
+                      {index + 1}
+                    </div>
+                    <div className="col-span-2 font-medium">{player.username}</div>
+                    <div className="col-span-2 text-right font-bold text-[#FFD93D]">{player.score}</div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
