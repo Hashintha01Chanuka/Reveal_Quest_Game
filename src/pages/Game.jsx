@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import bgImage from "../assets/b.jpeg";
 import { fetchPuzzle } from '../services/bananaApi';
-import Modal from '../components/Modal'; 
+import { fetchWordDefinition } from '../services/dictionaryApi';
+import Modal from '../components/Modal';
+import { playSound } from '../services/audio';
 
 const Game = () => {
   const navigate = useNavigate();
@@ -32,6 +34,8 @@ const Game = () => {
 
   const [gameStartTime] = useState(Date.now());
   const [wordsSolvedThisGame, setWordsSolvedThisGame] = useState(0);
+
+  const [wordData, setWordData] = useState(null);
 
   const [modalConfig, setModalConfig] = useState({
     isOpen: false,
@@ -81,7 +85,7 @@ const Game = () => {
 
       const uniqueLetters = [...new Set(currentWord.split(''))];
 
-      let numToReveal = 2; 
+      let numToReveal = 2;
       if (uniqueLetters.length >= 7) {
         numToReveal = 3;
       }
@@ -117,10 +121,12 @@ const Game = () => {
   const handleCheckPuzzle = (e) => {
     e.preventDefault();
     if (parseInt(puzzleAnswer) === puzzleSolution) {
+      playSound('correct')
       revealRandomLetter();
       setScore(score + 10);
       loadNewPuzzle();
     } else {
+      playSound('wrong')
       showModal("Wrong Answer ❌", "That math answer is incorrect. Try again!", "Try Again", null, "error");
     }
     setPuzzleAnswer('');
@@ -139,6 +145,7 @@ const Game = () => {
     }
     else if (guess.length === 1 && currentWord.includes(guess)) {
       if (!guessedLetters.includes(guess)) {
+        playSound('correct')
         const newGuessed = [...guessedLetters, guess];
         setGuessedLetters(newGuessed);
         setScore(score + 10);
@@ -148,6 +155,7 @@ const Game = () => {
       }
     }
     else {
+      playSound('wrong')
       const newLives = lives - 1;
       setLives(newLives);
 
@@ -208,23 +216,57 @@ const Game = () => {
     } catch (error) { console.error("Failed to save score:", error); }
   };
 
-  const handleWin = async () => {
+  const handleWin = async () => {   
     const newWordsSolved = wordsSolvedThisGame + 1;
     setWordsSolvedThisGame(newWordsSolved);
 
+    const currentWord = words[round].word;
+    const definitionData = await fetchWordDefinition(currentWord);
+    setWordData(definitionData);
+
     if (round < maxRounds - 1) {
-      showModal("Correct! 🎉", `The word was ${words[round].word}.`, `Start Round ${round + 2}`, () => setRound(round + 1), "success");
+      playSound('win')
+      showModal(
+        "Correct! 🎉",
+        (
+          <div className="flex flex-col gap-2">
+            <p>The word was <strong className="text-[#FFD93D] text-lg">{currentWord}</strong>.</p>
+            <div className="bg-[#152c52] p-3 rounded-lg text-left mt-2 border border-white/10">
+              <p className="text-xs text-gray-400  mb-1">{definitionData.partOfSpeech}</p>
+              <p className="text-sm text-gray-200">{definitionData.definition}</p>
+            </div>
+          </div>
+        ),
+        `Start Round ${round + 2}`,
+        () => setRound(round + 1),
+        "success"
+      );
     } else {
       // Game complete! Calculate time taken
       const timeTaken = Math.floor((Date.now() - gameStartTime) / 1000);
 
       await submitScoreToDatabase(score + 50, newWordsSolved, true, timeTaken);
 
-      showModal("Quest Complete! 🏆", `You finished with ${score + 50} points!`, "Back to Home", () => navigate('/home'), "success");
+      showModal(
+        "Quest Complete! 🏆",
+        (
+          <div className="flex flex-col gap-2">
+            <p>You finished with <strong className="text-[#FFD93D]">{score + 50} points!</strong></p>
+            <div className="bg-[#152c52] p-3 rounded-lg text-left mt-2 border border-white/10">
+              <p className="text-xs text-gray-400  mb-1">Final Word: {currentWord} ({definitionData.partOfSpeech})</p>
+              <p className="text-sm text-gray-200">{definitionData.definition}</p>
+            </div>
+          </div>
+        ),
+        "Back to Home",
+        () => navigate('/home'),
+        "success"
+      );
     }
   };
 
   const handleGameOver = async (reason) => {
+    playSound('gameover')
     const timeTaken = Math.floor((Date.now() - gameStartTime) / 1000);
 
     await submitScoreToDatabase(score, wordsSolvedThisGame, false, timeTaken);
@@ -291,7 +333,10 @@ const Game = () => {
           </div>
         ) : (
           <div className="animate-fade-in flex flex-col gap-4">
-            <button onClick={() => setIsPuzzleVisible(true)} className="w-full bg-[#152c52] text-[#FFD93D] border border-[#FFD93D]/30 py-3 rounded-lg font-bold flex justify-center items-center gap-2">
+              <button onClick={() => {
+                playSound('click')
+                setIsPuzzleVisible(true)
+              }} className="w-full bg-[#152c52] text-[#FFD93D] border border-[#FFD93D]/30 py-3 rounded-lg font-bold flex justify-center items-center gap-2">
               🍌 Solve Puzzle to Reveal a Letter
             </button>
             <div className="flex items-center gap-4">

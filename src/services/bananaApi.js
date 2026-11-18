@@ -1,5 +1,3 @@
-// src/services/bananaApi.js
-
 export const fetchPuzzle = async () => {
   try {
     const response = await fetch(
@@ -16,9 +14,6 @@ export const fetchPuzzle = async () => {
       throw new Error("Invalid data format received from API")
     }
 
-    // --- FIX FOR CORS IMAGE BLOCK ---
-    // The API returns a URL to sanfoh.com. We rewrite it to go through our Vite proxy.
-    // It changes "https://www.sanfoh.com/uob/banana/..." to "/banana-image/uob/banana/..."
     const proxyImageUrl = data.question.replace(
       "https://www.sanfoh.com",
       "/banana-image",
