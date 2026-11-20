@@ -22,11 +22,14 @@ function App() {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/how-to-play" element={<HowToPlay />} />
 
-          <Route element={<ProtectedRoute />}>
+        <Route element={<ProtectedRoute requireAuth={false} />}>
             <Route path="/home" element={<Home />} />
             <Route path="/game" element={<Game />} />
             <Route path="/categories" element={<CategorySelect />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
+          </Route>
+        
+          <Route element={<ProtectedRoute requireAuth={true} />}>
             <Route path="/profile" element={<Profile />} />
           </Route>
 

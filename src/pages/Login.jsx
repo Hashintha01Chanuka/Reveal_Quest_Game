@@ -61,6 +61,13 @@ const Login = () => {
     }
   };
 
+  const handleGuestLogin = () => {
+    const guestUser = { id: 'guest', username: 'Guest Player', isGuest: true };
+    localStorage.setItem('user', JSON.stringify(guestUser));
+    localStorage.removeItem('token');
+    navigate('/home')
+  };
+
   return (
     <div className="min-h-screen w-full flex items-center justify-center relative font-sans bg-contain bg-center bg-no-repeat bg-[#0f172a]" style={{ backgroundImage: `url(${bgImage})` }}>
 
@@ -102,6 +109,13 @@ const Login = () => {
             width="100%"
           />
         </div>
+
+        <button
+          onClick={handleGuestLogin}
+          className="mt-4 w-full bg-transparent border border-gray-500 text-gray-300 py-3 rounded-lg font-bold hover:bg-white/5 transition-all"
+        >
+          Play as Guest
+        </button>
 
         <div className="text-gray-400 text-sm text-center mt-4">
           Don't you have an account? <Link to="/register" className="text-[#FFD93D] font-semibold hover:underline">Register</Link>

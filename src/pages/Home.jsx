@@ -7,35 +7,35 @@ const Home = () => {
 
   const [bestScore, setBestScore] = useState(0);
   const [isLoadingScore, setIsLoadingScore] = useState(true);
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
 
   useEffect(() => {
+    // If guest, don't fetch stats, just set score to 0
+    if (user.isGuest) {
+      setIsLoadingScore(false);
+      return;
+    }
+
     const fetchBestScore = async () => {
       const token = localStorage.getItem('token');
-      if (!token) {
-        navigate('/');
-        return;
-      }
+      if (!token) return;
+
       try {
         const response = await fetch('http://localhost:5000/api/user/profile', {
           method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
-
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
         const data = await response.json();
-
-        if (response.ok) {
-          setBestScore(data.user.bestScore)
-        }
+        if (response.ok) setBestScore(data.user.bestScore);
       } catch (error) {
-        console.error("Failed to fetch best score:", error);
+        console.error(error);
       } finally {
-        setIsLoadingScore(false)
+        setIsLoadingScore(false);
       }
     };
+
     fetchBestScore();
-  }, [navigate])
+  }, [user.isGuest]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');

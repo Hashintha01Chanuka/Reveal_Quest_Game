@@ -198,7 +198,13 @@ const Game = () => {
 
   const submitScoreToDatabase = async (finalScore, wordsSolved, isWin, timeTaken) => {
     const token = localStorage.getItem('token');
-    if (!token) return;
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+    if (!token || user.isGuest) {
+      console.log("Guest player: Score not saved to database.");
+      return;
+    }
+
     try {
       await fetch('http://localhost:5000/api/score', {
         method: 'POST',
@@ -206,16 +212,12 @@ const Game = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          score: finalScore,
-          wordsSolved: wordsSolved,
-          isWin: isWin,
-          timeTaken: timeTaken
-        })
+        body: JSON.stringify({ score: finalScore, wordsSolved, isWin, timeTaken })
       });
-    } catch (error) { console.error("Failed to save score:", error); }
+    } catch (error) {
+      console.error("Failed to save score:", error);
+    }
   };
-
   const handleWin = async () => {   
     const newWordsSolved = wordsSolvedThisGame + 1;
     setWordsSolvedThisGame(newWordsSolved);

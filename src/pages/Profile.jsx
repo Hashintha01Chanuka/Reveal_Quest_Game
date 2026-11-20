@@ -9,7 +9,16 @@ const Profile = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const localUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const isGuest = localUser.isGuest;
+
   useEffect(() => {
+    if (isGuest) {
+      setIsLoading(false);
+      setError("Access Denied. Please log in to view your profile.");
+      return;
+    }
+
     const fetchProfile = async () => {
       const token = localStorage.getItem('token');
       if (!token) {
@@ -40,7 +49,7 @@ const Profile = () => {
     };
 
     fetchProfile();
-  }, [navigate]);
+  }, [navigate, isGuest]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -53,8 +62,17 @@ const Profile = () => {
   }
 
   if (error) {
-    return <div className="min-h-screen bg-[#0f172a] flex items-center justify-center text-red-500 text-xl">{error}</div>;
+    return (
+      <div className="min-h-screen bg-[#0f172a] flex flex-col items-center justify-center text-white text-xl gap-4">
+        <p className="text-red-500">{error}</p>
+        <button onClick={() => navigate('/home')} className="text-sm bg-[#FFD93D] text-[#0b1b36] px-6 py-2 rounded-lg font-bold hover:bg-[#facc15]">
+          Back to Home
+        </button>
+      </div>
+    );
   }
+
+  if (!profileData) return null;
 
   const { user, recentGames } = profileData;
 
@@ -64,7 +82,6 @@ const Profile = () => {
       style={{ backgroundImage: `url(${bgImage})` }}
     >
       <div className="relative z-10 flex flex-col md:flex-row items-center justify-between w-full max-w-5xl ml-60 p-8 gap-12 md:gap-0">
-
         <div className="flex-1 flex justify-center items-center"></div>
 
         <div className="w-full max-w-[550px] bg-[#0b1b36] rounded-2xl p-8 shadow-2xl flex flex-col gap-6 border border-white/10">
@@ -73,7 +90,6 @@ const Profile = () => {
             <p className="text-gray-400 text-sm mt-1">Player Statistics</p>
           </div>
 
-          {/* Stats Grid */}
           <div className="grid grid-cols-3 gap-3">
             <div className="bg-[#152c52] rounded-xl p-3 flex flex-col items-center justify-center text-center">
               <span className="text-white text-xl font-bold">{user.wordsSolved}</span>
@@ -98,7 +114,7 @@ const Profile = () => {
               <span className="text-gray-400 text-xs mt-1">Avg solve time</span>
             </div>
             <div className="bg-[#152c52] rounded-xl p-3 flex flex-col items-center justify-center text-center col-span-1">
-              <span className="text-white text-xl font-bold"> {user.fastestTime === '0s' ? '-' : user.fastestTime}</span>
+              <span className="text-white text-xl font-bold">{user.fastestTime === '0s' ? '-' : user.fastestTime}</span>
               <span className="text-gray-400 text-xs mt-1">Fastest solve</span>
             </div>
             <div className="col-span-1"></div>
